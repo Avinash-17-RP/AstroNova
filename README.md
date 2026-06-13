@@ -3,7 +3,7 @@
 
 A modern full-stack web application that combines live satellite tracking, astronomy data, asteroid monitoring, and AI-powered sky explanations. Experience a professional space operations dashboard merged with a planetarium.
 
-## 🎯 Features
+## 🎯 Features 
 
 ### 1. **Hero Experience** 
 - Realistic 3D Earth floating in space using CesiumJS
@@ -108,38 +108,33 @@ A modern full-stack web application that combines live satellite tracking, astro
 ### 1. Get API Keys
 
 #### N2YO (Satellite Tracking)
-```
 https://www.n2yo.com/api/
 - Sign up for free account
 - Get your API key
-```
 
 #### NASA API
-```
 https://api.nasa.gov/
 - Sign up for free account
 - Receive API key instantly
-```
 
 #### Astronomy API
-```
 https://www.astronomyapi.com/
 - Create account
 - Get App ID and App Secret
-```
+
 
 #### Google Gemini API
-```
+
 https://makersuite.google.com/app/apikey
 - Create API key for Gemini
-```
+
 
 #### Cesium Ion (Optional - for advanced features)
-```
+
 https://ion.cesium.com/
 - Create free account
 - Get Cesium Ion access token
-```
+
 
 ### 2. Clone or Download Project
 
@@ -149,7 +144,7 @@ cd AstroNova
 
 ### 3. Backend Setup
 
-```bash
+bash
 cd backend
 
 # Install dependencies
@@ -171,13 +166,13 @@ npm run dev
 
 # Or production mode
 npm start
-```
+
 
 Backend runs on: `http://localhost:5000`
 
 ### 4. Frontend Setup
 
-```bash
+bash
 cd frontend
 
 # Install dependencies
@@ -198,13 +193,13 @@ npm run build
 
 # Preview production build
 npm run preview
-```
+
 
 Frontend runs on: `http://localhost:5173`
 
 ## 📁 Project Structure
 
-```
+
 AstroNova/
 ├── frontend/
 │   ├── src/
@@ -261,7 +256,7 @@ AstroNova/
 │
 ├── .gitignore
 └── README.md
-```
+
 
 ## 🌐 API Endpoints
 
@@ -296,7 +291,7 @@ AstroNova/
 ## 🔒 Environment Variables
 
 ### Backend (.env)
-```
+
 PORT=5000
 NODE_ENV=development
 N2YO_API_KEY=your_key_here
@@ -306,31 +301,30 @@ ASTRONOMY_APP_SECRET=your_secret_here
 GEMINI_API_KEY=your_key_here
 FRONTEND_URL=http://localhost:5173
 CACHE_DURATION=5
-```
+
 
 ### Frontend (.env)
-```
+
 VITE_API_URL=http://localhost:5000/api
 VITE_CESIUM_ION_TOKEN=your_token_here
-```
 
 ## 🚢 Deployment
 
 ### Frontend (Vercel)
-```bash
+bash
 # Build
 npm run build
 
 # Deploy to Vercel
 vercel
-```
+
 
 ### Backend (Render)
-```bash
+bash
 # Set environment variables in Render dashboard
 # Connect repository
 # Render auto-deploys from main branch
-```
+
 
 ## 🔄 Real-Time Updates
 
@@ -343,12 +337,12 @@ vercel
 
 ### Colors
 Edit `frontend/tailwind.config.js` to customize theme colors:
-```javascript
+javascript
 colors: {
   space: { 900, 800, 700, 600 },
   neon: { blue, purple, pink }
 }
-```
+
 
 ### API Calls
 Modify service files in `frontend/src/services/` and `backend/src/services/`
@@ -441,11 +435,8 @@ For issues, questions, or suggestions:
 - API rate limiting and authentication
 - Database integration for history
 
----
+
 
 **Happy stargazing! 🌌**
 
 Built with ❤️ for space enthusiasts
-#   A s t r o N o v a 
- 
- 
