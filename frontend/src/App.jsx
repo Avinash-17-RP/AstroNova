@@ -4,6 +4,7 @@ import FloatingToolbar   from './components/FloatingToolbar';
 import CameraModeToggle  from './components/CameraModeToggle';
 import ISSTracker        from './components/ISSTracker';
 import SlidePanel        from './components/SlidePanel';
+import SkyViewPanel      from './components/SkyViewPanel';
 import AIAssistant       from './components/AIAssistant';
 import { useAppStore }   from './context/store';
 import { useSatelliteTracking } from './hooks/useSatelliteTracking';
@@ -147,6 +148,9 @@ function App() {
 
       {/* ── 4. Left: Slide-out panels ── */}
       <SlidePanel />
+
+      {/* ── 4b. Right: Sky View panel (when in sky mode) ── */}
+      <SkyViewPanel />
 
       {/* ── 5. Top-right: Earth/Space toggle ── */}
       <CameraModeToggle />

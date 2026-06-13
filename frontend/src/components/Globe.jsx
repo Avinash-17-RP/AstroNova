@@ -14,6 +14,7 @@ import {
   Cartesian2,
   PolylineDashMaterialProperty,
   PolylineCollection,
+  PolylineOutlineMaterialProperty,
 } from 'cesium';
 import { useAppStore } from '../context/store';
 
@@ -46,6 +47,7 @@ const Globe = () => {
     isTrackingISS,
     setViewerRef,
     showOrbitPaths,
+    isSkyViewMode,
   } = useAppStore();
 
   // ── Init Cesium Viewer ────────────────────────────────────────
@@ -330,8 +332,13 @@ const Globe = () => {
           id: `orbit-${sat.satid || idx}`,
           polyline: {
             positions: pts,
-            width: 1,
-            material: color.withAlpha(0.25),
+            width: 2,
+            material: new PolylineOutlineMaterialProperty({
+              color: color.withAlpha(0.6),
+              outlineColor: color.withAlpha(0.3),
+              outlineWidth: 1,
+            }),
+            clampToGround: false,
           },
         });
         entitiesRef.current.satellites.push(orbitEntity);
@@ -378,6 +385,48 @@ const Globe = () => {
       });
     }
   }, [cameraMode]);
+
+  // ── Sky View Mode (look up at the sky) ──────────────────────
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || !userLocation) return;
+
+    if (isSkyViewMode) {
+      // Sky view: position camera near ground, looking up at sky
+      viewer.camera.flyTo({
+        destination: Cartesian3.fromDegrees(
+          userLocation.lng,
+          userLocation.lat,
+          100_000 // 100 km altitude for good satellite viewing
+        ),
+        orientation: {
+          heading: 0,
+          pitch: CesiumMath.toRadians(75), // 75 degrees upward = nearly straight up
+          roll: 0,
+        },
+        duration: 2.0,
+        easingFunction: easingInOut,
+      });
+      console.log('Sky view enabled at:', userLocation.lat, userLocation.lng);
+    } else {
+      // Return to normal view
+      viewer.camera.flyTo({
+        destination: Cartesian3.fromDegrees(
+          userLocation.lng,
+          userLocation.lat,
+          1_500_000 // 1.5M km for normal view
+        ),
+        orientation: {
+          heading: 0,
+          pitch: CesiumMath.toRadians(-45),
+          roll: 0,
+        },
+        duration: 2.0,
+        easingFunction: easingInOut,
+      });
+      console.log('Returned to globe view');
+    }
+  }, [isSkyViewMode, userLocation]);
 
   // ── Terrain toggle ────────────────────────────────────────────
   useEffect(() => {

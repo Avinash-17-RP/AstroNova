@@ -29,7 +29,7 @@ const AIAssistant = () => {
       const response = await AIService.chat(input);
       const botMessage = {
         type: 'bot',
-        text: response.data?.response || 'Sorry, I couldn\'t process that.',
+        text: response.data?.data?.response || response.data?.response || 'Sorry, I couldn\'t process that.',
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {

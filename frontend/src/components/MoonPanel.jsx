@@ -56,8 +56,24 @@ const MoonPanel = () => {
   const moonBody = moon?.data?.table?.rows?.find(r => r.entry?.name?.toLowerCase() === 'moon');
   const moonCells = moonBody?.cells?.[0];
 
-  const illumination  = parseFloat(moonCells?.extraInfo?.illumination?.value ?? moon?.illumination ?? 0) / 100;
-  const phase         = moonCells?.extraInfo?.phase?.string ?? moon?.phase ?? getPhaseName(illumination);
+  const rawIllumination = parseFloat(
+    moonCells?.extraInfo?.illumination?.value ??
+      moon?.illumination ??
+      moon?.illuminationFraction ??
+      0
+  );
+
+  // Astronomy APIs sometimes return illumination as:
+  // - 0..1 (fraction)
+  // - 0..100 (percent)
+  const illuminationFraction = rawIllumination > 1.5 ? rawIllumination / 100 : rawIllumination;
+  const illumination = Math.max(0, Math.min(1, illuminationFraction));
+
+  const phase =
+    moonCells?.extraInfo?.phase?.string ||
+    moon?.phase ||
+    getPhaseName(illumination);
+
   const distance      = Math.round(parseFloat(moonCells?.distance?.fromEarth?.km ?? moon?.distance ?? 384400)).toLocaleString();
   const riseStr       = moonCells?.extraInfo?.riseTime   ?? moon?.moonrise  ?? '—';
   const setStr        = moonCells?.extraInfo?.setTime    ?? moon?.moonset   ?? '—';

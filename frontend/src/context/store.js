@@ -69,6 +69,10 @@ export const useAppStore = create((set, get) => ({
   satelliteRefreshInterval: 15,  // seconds
   setSatelliteRefreshInterval: (v) => set({ satelliteRefreshInterval: v }),
 
+  // ── Sky View Mode ─────────────────────────────────────────────
+  isSkyViewMode: false,
+  setSkyViewMode: (mode) => set({ isSkyViewMode: mode }),
+
   // ── UI ────────────────────────────────────────────────────────
   isAIOpen: false,
   setIsAIOpen: (open) => set({ isAIOpen: open }),

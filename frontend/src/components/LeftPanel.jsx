@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { MapPin, RefreshCw, Eye } from 'lucide-react';
 import { useAppStore } from '../context/store';
 import SatelliteService from '../services/SatelliteService';
+import { Cartesian3, CesiumMath } from 'cesium';
 
 const LeftPanel = () => {
-  const { userLocation, setUserLocation, isSkyViewMode, setSkyViewMode, satellites } = useAppStore();
+  const { userLocation, setUserLocation, isSkyViewMode, setSkyViewMode, satellites, viewerRef } = useAppStore();
   const [cityName, setCityName] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -14,7 +15,6 @@ const LeftPanel = () => {
 
     const getCity = async () => {
       try {
-        // Using reverse geocoding API (you can replace with your preferred service)
         const response = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation.lat}&lon=${userLocation.lng}`
         );
@@ -28,7 +28,7 @@ const LeftPanel = () => {
     getCity();
   }, [userLocation]);
 
-  // Handle locate me
+  // Handle locate me with camera zoom - FIXED
   const handleLocateMe = () => {
     setLoading(true);
     if (navigator.geolocation) {
@@ -36,12 +36,36 @@ const LeftPanel = () => {
         (position) => {
           const { latitude, longitude } = position.coords;
           setUserLocation({ lat: latitude, lng: longitude });
+          
+          // Zoom camera to user location
+          if (viewerRef && !viewerRef.isDestroyed()) {
+            try {
+              console.log('Zooming to location:', latitude, longitude);
+              viewerRef.camera.flyTo({
+                destination: Cartesian3.fromDegrees(longitude, latitude, 500_000),
+                orientation: {
+                  heading: 0,
+                  pitch: CesiumMath.toRadians(-45),
+                  roll: 0,
+                },
+                duration: 2.5,
+                easingFunction: function(t) {
+                  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOutQuad
+                }
+              });
+            } catch (err) {
+              console.error('Camera zoom error:', err);
+            }
+          }
+          
           setLoading(false);
         },
         (error) => {
           console.error('Geolocation error:', error);
+          alert('Could not get your location. Please enable location services.');
           setLoading(false);
-        }
+        },
+        { timeout: 5000, maximumAge: 0 }
       );
     }
   };
