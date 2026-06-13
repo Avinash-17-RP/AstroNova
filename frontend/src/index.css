@@ -1,0 +1,277 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* ── Reset & Base ─────────────────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #050914;
+}
+
+/* CSS custom properties for layout */
+:root {
+  --toolbar-w: 58px;
+  --panel-w: 300px;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Cesium container ─────────────────────────────────────────── */
+#cesium-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hide Cesium default UI chrome */
+.cesium-viewer-toolbar,
+.cesium-viewer-animationContainer,
+.cesium-viewer-timelineContainer,
+.cesium-viewer-bottom,
+.cesium-viewer-fullscreenContainer,
+.cesium-infoBox,
+.cesium-selection-wrapper {
+  display: none !important;
+}
+
+/* ── Glassmorphism ────────────────────────────────────────────── */
+.glass {
+  background: rgba(5, 9, 20, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 217, 255, 0.12);
+  border-radius: 14px;
+}
+
+.glass-sm {
+  background: rgba(10, 18, 40, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.glass-panel {
+  background: rgba(5, 9, 20, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 217, 255, 0.15);
+  border-radius: 16px;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.03);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 217, 255, 0.3);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 217, 255, 0.6);
+}
+
+/* ── Panel slide animations ───────────────────────────────────── */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutLeft {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-20px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.panel-enter {
+  animation: slideInLeft 0.25s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+
+.panel-exit {
+  animation: slideOutLeft 0.2s ease-in forwards;
+}
+
+/* ── Glow / pulse animations ─────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(0, 217, 255, 0.4); }
+  50%       { box-shadow: 0 0 24px rgba(0, 217, 255, 0.8); }
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+  50%       { box-shadow: 0 0 20px rgba(239, 68, 68, 0.9); }
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+@keyframes ping-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.8); opacity: 0.3; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+
+.pulse-glow   { animation: pulse-glow 3s ease-in-out infinite; }
+.pulse-red    { animation: pulse-red 2s ease-in-out infinite; }
+.float-anim   { animation: float 4s ease-in-out infinite; }
+.spin-slow    { animation: orbit-spin 8s linear infinite; }
+.ping-dot     { animation: ping-dot 1.5s ease-in-out infinite; }
+
+/* ── Tooltip ──────────────────────────────────────────────────── */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(5, 9, 20, 0.95);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 9999;
+}
+[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* ── ISS Tracker HUD ─────────────────────────────────────────── */
+.iss-hud {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+/* ── Category tab active ─────────────────────────────────────── */
+.cat-tab-active {
+  background: linear-gradient(135deg, rgba(0,217,255,0.2), rgba(217,70,239,0.15));
+  border-color: rgba(0,217,255,0.4);
+  color: #00d9ff;
+}
+
+/* ── Satellite marker dot ────────────────────────────────────── */
+.sat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ── Number/stat value ───────────────────────────────────────── */
+.stat-val {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  letter-spacing: 0.03em;
+}
+
+/* ── Hazardous badge ─────────────────────────────────────────── */
+.hazard-badge {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Mode toggle pill ────────────────────────────────────────── */
+.mode-pill {
+  background: rgba(5, 9, 20, 0.8);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Scrollable panel content ───────────────────────────────── */
+.panel-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  /* Allow panel to scroll without propagating to globe */
+}
+
+/* ── Range input ───────────────────────────────────────── */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00d9ff;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(0,217,255,0.5);
+  transition: box-shadow 0.15s;
+}
+input[type='range']::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 10px rgba(0,217,255,0.8);
+}
+
+/* ── Gradient text utility ──────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #00d9ff, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Moon phase SVG ──────────────────────────────────────────── */
+.moon-ring {
+  filter: drop-shadow(0 0 8px rgba(217, 180, 70, 0.5));
+}
