@@ -10,6 +10,7 @@ import satelliteRoutes from './routes/satellites.js';
 import astronomyRoutes from './routes/astronomy.js';
 import nasaRoutes from './routes/nasa.js';
 import aiRoutes from './routes/ai.js';
+import configRoutes from './routes/config.js';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use((req, res, next) => {
 
 // ========== ROUTES ==========
 app.use('/api/health', healthRoutes);
+app.use('/api/config', configRoutes);
 app.use('/api/satellites', satelliteRoutes);
 app.use('/api/astronomy', astronomyRoutes);
 app.use('/api/nasa', nasaRoutes);

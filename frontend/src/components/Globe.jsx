@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   Viewer,
   Cartesian3,
@@ -15,7 +15,9 @@ import {
   PolylineDashMaterialProperty,
   PolylineCollection,
   PolylineOutlineMaterialProperty,
+  Ellipsoid,
 } from 'cesium';
+
 import { useAppStore } from '../context/store';
 
 // ── Category colors ──────────────────────────────────────────────
@@ -33,8 +35,9 @@ const ISS_NORAD = 25544;
 const Globe = () => {
   const containerRef  = useRef(null);
   const viewerRef     = useRef(null);
-  const entitiesRef   = useRef({ userMarker: null, iss: null, satellites: [], orbits: [] });
+  const entitiesRef   = useRef({ userMarker: null, iss: null, satellites: [], orbits: [], planets: [] });
   const orbitLinesRef = useRef(null); // PolylineCollection for orbit paths
+
 
   const {
     userLocation,
@@ -48,7 +51,12 @@ const Globe = () => {
     setViewerRef,
     showOrbitPaths,
     isSkyViewMode,
+    setSelectedSatellite,
+    bodiesData,
+    setSelectedPlanet,
   } = useAppStore();
+
+
 
   // ── Init Cesium Viewer ────────────────────────────────────────
   useEffect(() => {
@@ -128,20 +136,37 @@ const Globe = () => {
 
 
 
-        // ── Double-click → focus entity ─────────────────────
+  // ── Double-click → focus entity ─────────────────────
         viewer.screenSpaceEventHandler.setInputAction((click) => {
           const picked = viewer.scene.pick(click.position);
-          if (picked?.id) {
-            viewer.camera.flyTo({
-              destination: picked.id.position?.getValue
-                ? Cartesian3.fromElements(
-                    ...Object.values(picked.id.position.getValue(viewer.clock.currentTime) ?? {})
-                  )
-                : viewer.camera.position,
-              duration: 2.0,
-            });
+          if (picked?.id && picked.id.position?.getValue) {
+            const pos = picked.id.position.getValue(viewer.clock.currentTime);
+            if (pos) {
+              viewer.camera.flyTo({
+                destination: pos,
+                duration: 2.0,
+              });
+            }
           }
         }, ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+
+        // ── Left-click → show satellite/planet popup ───────────
+        viewer.screenSpaceEventHandler.setInputAction((click) => {
+          const picked = viewer.scene.pick(click.position);
+          const data = picked?.id?.satelliteData;
+          const planet = picked?.id?.planetData;
+
+          if (planet) {
+            setSelectedPlanet(planet);
+            return;
+          }
+
+          if (data) {
+            setSelectedSatellite(data);
+            console.log('Selected satellite:', data.satname);
+          }
+        }, ScreenSpaceEventType.LEFT_CLICK);
+
 
         viewerRef.current = viewer;
         setViewerRef(viewer);
@@ -225,6 +250,17 @@ const Globe = () => {
 
     const entity = viewer.entities.add({
       id: 'iss',
+      satelliteData: {
+        satname: 'ISS (International Space Station)',
+        satid: 25544,
+        satlat: pos.satlat,
+        satlng: pos.satlng,
+        satalt: pos.satalt || 408,
+        velocity: issData.iss_speed || 0,
+        inclination: 51.6,
+        category: 'space-station',
+        ...pos
+      },
       position: Cartesian3.fromDegrees(pos.satlng, pos.satlat, (pos.satalt || 408) * 1000),
       billboard: {
         image: createSatelliteIcon('#ffd700', '🛸'),
@@ -287,6 +323,7 @@ const Globe = () => {
 
       const entity = viewer.entities.add({
         id: `sat-${sat.satid || idx}`,
+        satelliteData: sat, // Store satellite data on entity for click handler
         position: Cartesian3.fromDegrees(lng, lat, alt),
         point: {
           pixelSize: 5,
@@ -351,43 +388,239 @@ const Globe = () => {
     const viewer = viewerRef.current;
     if (!viewer) return;
 
+    // Keep Earth readable + allow planets to be visible (don’t zoom so far away)
+    const targetLng = userLocation?.lng ?? 0;
+    const targetLat = userLocation?.lat ?? 20;
+
     if (cameraMode === 'space') {
-      // Fly away — Earth as a sphere
       viewer.camera.flyTo({
-        destination: Cartesian3.fromDegrees(
-          userLocation?.lng ?? 0,
-          userLocation?.lat ?? 20,
-          45_000_000
-        ),
+        destination: Cartesian3.fromDegrees(targetLng, targetLat, 26_000_000),
         orientation: {
           heading: 0,
-          pitch: CesiumMath.toRadians(-15),
+          pitch: CesiumMath.toRadians(-10),
           roll: 0,
         },
-        duration: 3.5,
+        duration: 2.8,
         easingFunction: easingInOut,
       });
+
+      // Make distance-based labels/items easier to see in this mode
+      viewer.scene.fog.density = 0.00003;
     } else {
-      // Earth mode — standard zoom
+      viewer.scene.fog.density = 0.0001;
       viewer.camera.flyTo({
-        destination: Cartesian3.fromDegrees(
-          userLocation?.lng ?? 0,
-          userLocation?.lat ?? 20,
-          18_000_000
-        ),
+        destination: Cartesian3.fromDegrees(targetLng, targetLat, 18_000_000),
         orientation: {
           heading: 0,
           pitch: CesiumMath.toRadians(-25),
           roll: 0,
         },
-        duration: 3.0,
+        duration: 2.4,
         easingFunction: easingInOut,
       });
     }
-  }, [cameraMode]);
+  }, [cameraMode, userLocation]);
+
+
+  // ── Planet rendering (space mode) ───────────────────────────
+  useEffect(() => {
+
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    // Clear old planet entities
+    if (entitiesRef.current.planets?.length) {
+      entitiesRef.current.planets.forEach((e) => {
+        try { viewer.entities.remove(e); } catch (_) {}
+      });
+    }
+    entitiesRef.current.planets = [];
+
+    if (!cameraMode || cameraMode !== 'space') return;
+    if (!bodiesData?.data?.table?.rows) return;
+
+    const rows = bodiesData.data.table.rows;
+    const planetIds = ['mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+
+    const planetRows = rows.filter((r) => {
+      const name = r?.entry?.id || r?.entry?.name;
+      const n = (name || '').toLowerCase();
+      return planetIds.includes(n);
+    });
+
+    const radiusBase = 6_371_000;
+    const planetColors = {
+      mercury: Color.fromCssColorString('#a3a3a3'),
+      venus: Color.fromCssColorString('#facc15'),
+      mars: Color.fromCssColorString('#fb7185'),
+      jupiter: Color.fromCssColorString('#f59e0b'),
+      saturn: Color.fromCssColorString('#fde68a'),
+    };
+
+    // Hackathon positioning: place planets relative to user location direction using alt/az
+    // AstronomyAPI bodies positions include horizontal altitude/azimuth; we approximate a ray.
+    const userAltM = 1_500_000;
+
+    planetRows.forEach((r, idx) => {
+      const entryName = (r?.entry?.name || r?.entry?.id || '').toLowerCase();
+      if (!planetIds.includes(entryName)) return;
+
+      const cell = r?.cells?.[0];
+      const altitudeDeg = Number(cell?.position?.horizontal?.altitude?.degrees ?? 0);
+      const azimuthDeg = Number(cell?.position?.horizontal?.azimuth?.degrees ?? 0);
+
+      // If not above horizon, still render in space mode but dim.
+      const visible = altitudeDeg > 0;
+
+      // Approx “distance from observer” in meters: astronomy cells may contain distance; fallback.
+      const distKm = Number(
+        cell?.distance?.fromEarth?.km ??
+        cell?.distance?.toEarth?.km ??
+        50_000_000
+      );
+      const distM = (Number.isFinite(distKm) ? distKm : 50_000_000) * 1000;
+
+      const az = CesiumMath.toRadians(azimuthDeg);
+      const alt = CesiumMath.toRadians(altitudeDeg);
+
+      // Create a local ENU direction and step outward.
+      const lat = userLocation?.lat ?? 20;
+      const lng = userLocation?.lng ?? 0;
+
+      // Convert the user geodetic point to cartesian at a modest altitude.
+      const origin = Cartesian3.fromDegrees(lng, lat, userAltM);
+      const up = viewer.scene.globe.ellipsoid.geodeticSurfaceNormal(
+        origin,
+        new Cartesian3()
+      );
+
+      // Build east and north vectors on the ellipsoid.
+      const east = Cartesian3.normalize(
+        Cartesian3.cross(
+          up,
+          Cartesian3.UNIT_Z,
+          new Cartesian3()
+        ),
+        new Cartesian3()
+      );
+      const north = Cartesian3.normalize(Cartesian3.cross(east, up, new Cartesian3()), new Cartesian3());
+
+      // Horizontal direction based on azimuth (az=0 north, 90 east)
+      const horiz = new Cartesian3(
+        north.x * Math.cos(az) + east.x * Math.sin(az),
+        north.y * Math.cos(az) + east.y * Math.sin(az),
+        north.z * Math.cos(az) + east.z * Math.sin(az)
+      );
+
+      const dir = Cartesian3.normalize(
+        new Cartesian3(
+          horiz.x * Math.cos(alt) + up.x * Math.sin(alt),
+          horiz.y * Math.cos(alt) + up.y * Math.sin(alt),
+          horiz.z * Math.cos(alt) + up.z * Math.sin(alt)
+        ),
+        new Cartesian3()
+      );
+
+      const position = Cartesian3.add(origin, Cartesian3.multiplyByScalar(dir, distM, new Cartesian3()), new Cartesian3());
+
+      const color = planetColors[entryName] || Color.WHITE;
+      const scale = entryName === 'jupiter' ? 2.2 : entryName === 'saturn' ? 1.8 : 1.4;
+
+      // Planet entity
+      const planetEntity = viewer.entities.add({
+        id: `planet-${entryName}`,
+        planetData: {
+          name: entryName.charAt(0).toUpperCase() + entryName.slice(1),
+          emoji: entryName === 'jupiter' ? '♃' : entryName === 'saturn' ? '♄' : entryName === 'mars' ? '♂' : entryName === 'venus' ? '♀' : '☿',
+          visible,
+          altitude: altitudeDeg.toFixed(1),
+          azimuth: azimuthDeg.toFixed(1),
+          distance: distKm ? `${Math.round(distKm).toLocaleString()} km` : '—',
+          magnitude: cell?.extraInfo?.magnitude?.value ?? '—',
+          moons: entryName === 'jupiter' ? 95 : entryName === 'saturn' ? 146 : 0,
+          rings: entryName === 'saturn',
+          activity: entryName === 'jupiter'
+            ? 'Jupiter is the solar system’s largest planet—lots of moons and storms.'
+            : entryName === 'saturn'
+              ? 'Saturn’s rings dominate its appearance. Explore the rings by clicking.'
+              : 'A bright planet in the night sky—check altitude/azimuth in the panel.',
+        },
+        position,
+        ellipsoid: {
+          radii: new Cartesian3(55_000 * scale, 55_000 * scale, 55_000 * scale),
+          material: color.withAlpha(visible ? 0.95 : 0.25),
+          outline: false,
+        },
+        label: {
+          text: visible ? entryName.toUpperCase() : '',
+          font: '11px "JetBrains Mono", monospace',
+          fillColor: color,
+          outlineColor: Color.BLACK,
+          outlineWidth: 2,
+          pixelOffset: new Cartesian2(0, 18),
+          showBackground: true,
+          backgroundColor: Color.BLACK.withAlpha(0.35),
+        },
+      });
+
+      entitiesRef.current.planets.push(planetEntity);
+
+      // Saturn rings (simple flat ellipse approximation)
+      if (entryName === 'saturn') {
+        viewer.entities.add({
+          id: `ring-${entryName}`,
+          position,
+          ellipse: {
+            semiMajorAxis: 120_000,
+            semiMinorAxis: 40_000,
+            height: 0,
+            material: Color.fromCssColorString('#c7c7c7').withAlpha(0.35),
+            outline: true,
+            outlineColor: Color.fromCssColorString('#e5e7eb').withAlpha(0.5),
+          },
+        });
+      }
+
+      // Orbit ring around Earth-ish reference (visual only)
+      // Use a simple circle in the ECEF-ish frame by sampling at fixed radius.
+      const showOrbit = true;
+      if (showOrbit && cameraMode === 'space') {
+        const altM = 50_000_000; // purely visual
+        const incl = entryName === 'jupiter' ? 0.4 : entryName === 'saturn' ? 0.3 : 0.2;
+        const steps = 96;
+        const pts = [];
+        const x0 = 0, y0 = 0, z0 = 0;
+        for (let i = 0; i <= steps; i++) {
+          const t = (i / steps) * 2 * Math.PI;
+          const x = Math.cos(t);
+          const y = Math.sin(t) * Math.cos(incl);
+          const z = Math.sin(t) * Math.sin(incl);
+          const R = radiusBase + altM;
+          pts.push(new Cartesian3(x * R + x0, y * R + y0, z * R + z0));
+        }
+        const orbitEntity = viewer.entities.add({
+          id: `orbit-ring-${entryName}`,
+          polyline: {
+            positions: pts,
+            width: 1.5,
+            material: new PolylineOutlineMaterialProperty({
+              color: color.withAlpha(0.45),
+              outlineColor: color.withAlpha(0.15),
+              outlineWidth: 1,
+            }),
+            clampToGround: false,
+          },
+        });
+        entitiesRef.current.planets.push(orbitEntity);
+      }
+
+      // Starfield-like burst: optional (handled in its own effect)
+    });
+  }, [cameraMode, bodiesData, userLocation]);
 
   // ── Sky View Mode (look up at the sky) ──────────────────────
   useEffect(() => {
+
     const viewer = viewerRef.current;
     if (!viewer || !userLocation) return;
 

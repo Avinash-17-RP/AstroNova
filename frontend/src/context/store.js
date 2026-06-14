@@ -73,6 +73,15 @@ export const useAppStore = create((set, get) => ({
   isSkyViewMode: false,
   setSkyViewMode: (mode) => set({ isSkyViewMode: mode }),
 
+  // ── Selected Satellite (for popup) ────────────────────────────
+  selectedSatellite: null,
+  setSelectedSatellite: (sat) => set({ selectedSatellite: sat }),
+
+  // ── Selected Planet (for popup) ──────────────────────────────
+  selectedPlanet: null,
+  setSelectedPlanet: (planet) => set({ selectedPlanet: planet }),
+
+
   // ── UI ────────────────────────────────────────────────────────
   isAIOpen: false,
   setIsAIOpen: (open) => set({ isAIOpen: open }),

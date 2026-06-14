@@ -5,8 +5,11 @@ import CameraModeToggle  from './components/CameraModeToggle';
 import ISSTracker        from './components/ISSTracker';
 import SlidePanel        from './components/SlidePanel';
 import SkyViewPanel      from './components/SkyViewPanel';
+import SatelliteInfoPopup from './components/SatelliteInfoPopup';
+import PlanetInfoPopup    from './components/PlanetInfoPopup';
 import AIAssistant       from './components/AIAssistant';
 import { useAppStore }   from './context/store';
+
 import { useSatelliteTracking } from './hooks/useSatelliteTracking';
 import { useAstronomyData }     from './hooks/useAstronomyData';
 
@@ -80,7 +83,8 @@ function DataProvider() {
 // ── Main App ──────────────────────────────────────────────────────
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { setUserLocation, setCityName, setError } = useAppStore();
+  const { setUserLocation, setCityName, setError, selectedSatellite, setSelectedSatellite, selectedPlanet } = useAppStore();
+
 
   // Auto-detect location on mount
   useEffect(() => {
@@ -160,8 +164,27 @@ function App() {
 
       {/* ── 7. AI Assistant (triggered from toolbar) ── */}
       <AIAssistant />
+
+      {/* ── 8a. Satellite Info Popup (on click) ── */}
+      {selectedSatellite && (
+        <SatelliteInfoPopup
+          satellite={selectedSatellite}
+          onClose={() => setSelectedSatellite(null)}
+        />
+      )}
+
+      {/* ── 8b. Planet Info Popup (on click) ── */}
+      {selectedPlanet && (
+        <PlanetInfoPopup
+          planet={selectedPlanet}
+          onClose={() => {
+            /* store handles clearing */
+          }}
+        />
+      )}
     </div>
   );
 }
+
 
 export default App;
