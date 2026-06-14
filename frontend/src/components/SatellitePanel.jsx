@@ -15,11 +15,15 @@ const SatellitePanel = () => {
   const {
     satellites, satelliteCategory, setSatelliteCategory,
     issData, isTrackingISS, setIsTrackingISS, viewerRef,
+    setSelectedSatellite,
   } = useAppStore();
 
   const pos = issData?.positions?.[0];
 
-  const focusSatellite = (lng, lat, alt) => {
+  const focusSatellite = (lng, lat, alt, sat) => {
+    if (sat) {
+      setSelectedSatellite(sat);
+    }
     if (!viewerRef) return;
     const { Cartesian3 } = window.Cesium || {};
     if (!Cartesian3) return;
@@ -140,7 +144,7 @@ const SatellitePanel = () => {
                 key={sat.satid || idx}
                 sat={sat}
                 color={catColor}
-                onFocus={() => focusSatellite(sat.satlng, sat.satlat, sat.satalt)}
+                onFocus={() => focusSatellite(sat.satlng, sat.satlat, sat.satalt, sat)}
               />
             );
           })

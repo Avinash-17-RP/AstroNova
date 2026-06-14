@@ -29,7 +29,7 @@ export const useAppStore = create((set, get) => ({
   issLastFetch: 0,
   setISSLastFetch: (t) => set({ issLastFetch: t }),
   isTrackingISS: false,
-  setIsTrackingISS: (v) => set({ isTrackingISS: v }),
+  setIsTrackingISS: (v) => set((s) => ({ isTrackingISS: v, isTrackingSelectedSat: v ? false : s.isTrackingSelectedSat })),
 
   // ── ISS Passes ────────────────────────────────────────────────
   issPasses: [],
@@ -89,4 +89,14 @@ export const useAppStore = create((set, get) => ({
   // ── Errors ───────────────────────────────────────────────────
   error: null,
   setError: (error) => set({ error }),
+
+  // ── Selected Satellite ────────────────────────────────────────
+  selectedSatellite: null,
+  setSelectedSatellite: (sat) => set((s) => ({ selectedSatellite: sat, isTrackingSelectedSat: false, isTrackingISS: sat ? false : s.isTrackingISS })),
+  isTrackingSelectedSat: false,
+  setIsTrackingSelectedSat: (v) => set((s) => ({ isTrackingSelectedSat: v, isTrackingISS: v ? false : s.isTrackingISS })),
+
+  // ── AI Query Helper ───────────────────────────────────────────
+  aiQuery: '',
+  setAIQuery: (q) => set({ aiQuery: q }),
 }));

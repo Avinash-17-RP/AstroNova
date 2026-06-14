@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Send, MessageCircle, X } from 'lucide-react';
 import { useAppStore } from '../context/store';
 import AIService from '../services/AIService';
 
 const AIAssistant = () => {
-  const { isAIOpen, setIsAIOpen } = useAppStore();
+  const { isAIOpen, setIsAIOpen, aiQuery, setAIQuery } = useAppStore();
   const [messages, setMessages] = useState([
     {
       type: 'bot',
@@ -13,6 +13,14 @@ const AIAssistant = () => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (aiQuery) {
+      setInput(aiQuery);
+      setAIQuery('');
+      setIsAIOpen(true);
+    }
+  }, [aiQuery, setIsAIOpen, setAIQuery]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
